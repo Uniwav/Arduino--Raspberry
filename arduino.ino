@@ -12,12 +12,28 @@
 
 
 #define TAILLEBUFFER 38
-#define DELAYING	 30
+#define DELAYING     30
 
 
 Adafruit_BMP085 bmp;
 ds1302_struct rtc;
 DHT dht(DHT_P, DHT11);
+
+
+typedef struct
+{
+	float temp;
+	float hygro;
+	float pressure;
+	float luminosity;
+
+	char tempX[5];
+	char hygroX[3];
+	char pressureX[7];
+	char luminosityX[3];
+
+} VARIABLES;
+
 
 
 void setup()
@@ -38,8 +54,7 @@ void setup()
 
 void loop()
 {
-	float temp = 0, hygro = 0, pressure = 0, luminosity = 0;
-	char tempX[5] = {""}, hygroX[3] = {""}, pressureX[7] = {""}, luminosityX[3] = {""};
+	VARIABLES meteo;
 
 	char buffer[TAILLEBUFFER];
 	short int charLenght = 0;
@@ -48,10 +63,10 @@ void loop()
 
 	for( ; ; delay(10000))
 	{
-		temp = (bmp.readTemperature() + dht.readTemperature(0)) / 2.0;
-		hygro = dht.readHumidity();
-		pressure = (bmp.readPressure() / 100.0);
-		luminosity = (100.0 * analogRead(LUM)) / 900.0;
+		meteo.temp = (bmp.readTemperature() + dht.readTemperature(0)) / 2.0;
+		meteo.hygro = dht.readHumidity();
+		meteo.pressure = (bmp.readPressure() / 100.0);
+		meteo.luminosity = (5.0 * analogRead(LUM)) / 1023.0;
 
 		DS1302_clock_burst_read((uint8_t *) &rtc);
 
@@ -62,10 +77,12 @@ void loop()
 	    	bcd2bin(rtc.h24.Hour10, rtc.h24.Hour), \
 	    	bcd2bin(rtc.Minutes10, rtc.Minutes), \
 	    	bcd2bin(rtc.Seconds10, rtc.Seconds), \
-	    	dtostrf(temp, 4, 1, tempX), \
-	    	dtostrf(hygro, 2, 0, hygroX), \
-	    	dtostrf(pressure, 6, 1, pressureX), \
-	    	dtostrf(luminosity, 2, 0, luminosityX));
+	    	dtostrf(meteo.temp, 4, 1, meteo.tempX), \
+	    	dtostrf(meteo.hygro, 2, 0, meteo.hygroX), \
+	    	dtostrf(meteo.pressure, 6, 1, meteo.pressureX), \
+	    	dtostrf(meteo.luminosity, 2, 0, meteo.luminosityX));
+
+		ecran(&meteo);
 
 		charLenght = Serial.write(buffer);
 		Serial.flush();
@@ -94,4 +111,17 @@ void loop()
 }
 
 
-//rsync -t /home/horloge/Dropbox/Programme/Projet\ 1_A/data.txt root@serveurCOCO:/var/www/data/
+void ecran(VARIABLES *meteo)
+{
+	lcd.clear();
+	lcd.turnBacklightOn(true);
+
+	lcd.writeString(0, 0, meteo->tempX, MENU_NORMAL);
+	lcd.writeString(1, 0, meteo->hygroX, MENU_NORMAL);
+	lcd.writeString(2, 0, meteo->pressureX, MENU_NORMAL);
+	lcd.writeString(3, 0, meteo->tempX, MENU_NORMAL);
+
+	delay(3000);
+
+	lcd.turnBacklightOn(false);
+}
