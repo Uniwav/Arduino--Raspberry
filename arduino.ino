@@ -1,8 +1,9 @@
 #include "Wire.h"
-#include "LCD4884.h"
 #include "Adafruit_BMP085.h"
-#include "TinyDHT.h"
 #include "DS1302.h"
+#include "TinyDHT.h"
+#include "LCD4884.h"
+
 
 #define DHT_P 10
 
@@ -10,43 +11,51 @@
 #define SDA A4
 #define SCL A5
 
+#define TAILLEBUFFER 		 	   38
+#define DELAYING_ACK	 	  30*1000
+#define DELAYING_SENDING   30*60*1000
+#define DELAY_AFTER_START   1*60*1000
 
-#define TAILLEBUFFER 38
-#define DELAYING     30
 
 
 Adafruit_BMP085 bmp;
-ds1302_struct rtc;
+DS1302 rtc;
 DHT dht(DHT_P, DHT11);
 
 
-typedef struct
-{
-	float temp;
-	float hygro;
-	float pressure;
-	float luminosity;
 
-	char tempX[5];
-	char hygroX[3];
-	char pressureX[7];
-	char luminosityX[3];
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+#define NUM_MENU_ITEM  4
 
-} VARIABLES;
+char menuList[NUM_MENU_ITEM][NBCHAR_X] = {"Temperature", "Humidity", "Pressure", "Luminosity"};
+
+void temperature(void);
+void humidity(void);
+void pressure(void);
+void luminosity(void);
+
+FONCTION menuFunction[NUM_MENU_ITEM] = {temperature, humidity, pressure, luminosity};
+
+char *projectName = "Uniwav:";
+/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
+VARIABLES env;
 
 
 
 void setup()
 {
 	Serial.begin(9600);
-	lcd.init();
-	lcd.clear();
-	lcd.turnBacklightOn(false);
+
+	lcd.initClass(projectName, NUM_MENU_ITEM);
+	lcd.showMenu(menuList);
 
 	dht.begin();
 	while(!bmp.begin())
 	{
-		Serial.println("Error with BMP085 !");
+		//Serial.println("Error with BMP085 !");
 		delay(1500);
 	}
 }
@@ -54,20 +63,53 @@ void setup()
 
 void loop()
 {
-	VARIABLES meteo;
+	static unsigned long int schedule = DELAY_AFTER_START;
+
+
+	//Menu
+	lcd.browseMenu(menuList, menuFunction);
+
+
+	//Envoie données
+	if(millis() - schedule >= DELAYING_SENDING || lcd.getLongPress() == true)
+	{
+		sendData();
+		schedule = millis();
+	}
+}
+
+
+
+void updateData()
+{
+	env.temp = (bmp.readTemperature() + dht.readTemperature(0)) / 2.0;
+	env.hygro = dht.readHumidity();
+	env.pressure = (bmp.readPressure() / 100.0);
+	env.luminosity = (5.0 * analogRead(LUM)) / 1023.0;
+
+	dtostrf(env.temp, 4, 1, env.tempX);
+	dtostrf(env.hygro, 2, 0, env.hygroX);
+	dtostrf(env.pressure, 6, 1, env.pressX);
+	dtostrf(env.luminosity, 2, 0, env.lumX);
+}
+
+
+void sendData()
+{
+	updateData();
+
+	lcd.turnBacklightOn(true);
+	lcd.clear();
+	lcd.writeString(CENTER("Sending"), 1, "Sending", MENU_NORMAL);
+	lcd.writeString(CENTER("data..."), 2, "data...", MENU_NORMAL);
 
 	char buffer[TAILLEBUFFER];
 	short int charLenght = 0;
 
-	unsigned long int tempsAttendu = 0;
+	unsigned long int timeWaited = 0;
 
 	for( ; ; delay(10000))
 	{
-		meteo.temp = (bmp.readTemperature() + dht.readTemperature(0)) / 2.0;
-		meteo.hygro = dht.readHumidity();
-		meteo.pressure = (bmp.readPressure() / 100.0);
-		meteo.luminosity = (5.0 * analogRead(LUM)) / 1023.0;
-
 		DS1302_clock_burst_read((uint8_t *) &rtc);
 
 		sprintf(buffer, "%02d/%02d/%04d %02d:%02d:%02d %s %s %s %s", \
@@ -77,12 +119,10 @@ void loop()
 	    	bcd2bin(rtc.h24.Hour10, rtc.h24.Hour), \
 	    	bcd2bin(rtc.Minutes10, rtc.Minutes), \
 	    	bcd2bin(rtc.Seconds10, rtc.Seconds), \
-	    	dtostrf(meteo.temp, 4, 1, meteo.tempX), \
-	    	dtostrf(meteo.hygro, 2, 0, meteo.hygroX), \
-	    	dtostrf(meteo.pressure, 6, 1, meteo.pressureX), \
-	    	dtostrf(meteo.luminosity, 2, 0, meteo.luminosityX));
-
-		ecran(&meteo);
+	    	env.tempX, \
+	    	env.hygroX, \
+	    	env.pressX, \
+	    	env.lumX);
 
 		charLenght = Serial.write(buffer);
 		Serial.flush();
@@ -93,12 +133,16 @@ void loop()
 			Serial.flush();
 		}
 
-
 		tempsAttendu = millis();
+
+		lcd.clear();
+		lcd.writeString(CENTER("Waiting"), 1, "Waiting", MENU_NORMAL);
+		lcd.writeString(CENTER("for Pi..."), 2, "for Pi...", MENU_NORMAL);
+		delay(500);
 
 		while(Serial.read() != 'K')
 		{
-			if((millis() - tempsAttendu) / 1000 <= DELAYING)
+			if((millis() - timeWaited) <= DELAYING_ACK)
 			{
 				delay(100);
 			}
@@ -107,21 +151,59 @@ void loop()
 				delay(10000);
 			}
 		}
+
+		lcd.clear();
+		lcd.writeString(CENTER("Data sent."), 1, "Data sent.", MENU_NORMAL);
+		delay(1500);
+		lcd.turnBacklightOn(false);
+		lcd.clear();
 	}
 }
 
 
-void ecran(VARIABLES *meteo)
+void temperature(void)
 {
-	lcd.clear();
-	lcd.turnBacklightOn(true);
+	updateData();
 
-	lcd.writeString(0, 0, meteo->tempX, MENU_NORMAL);
-	lcd.writeString(1, 0, meteo->hygroX, MENU_NORMAL);
-	lcd.writeString(2, 0, meteo->pressureX, MENU_NORMAL);
-	lcd.writeString(3, 0, meteo->tempX, MENU_NORMAL);
+	lcd.writeString(0, 1, menuList[0], MENU_NORMAL);
+	lcd.writeString(11 * NB_PIX_X, 1, ":", MENU_NORMAL);
 
-	delay(3000);
+	lcd.writeStringBig((NBCHAR_X / 4) * NB_PIX_X, 2, env.tempX, MENU_NORMAL);
+	lcd.writeString(10 * NB_PIX_X, 4, "oC", MENU_NORMAL);
+}
 
-	lcd.turnBacklightOn(false);
+
+void humidity(void)
+{
+	updateData();
+
+	lcd.writeString(0, 1, menuList[1], MENU_NORMAL);
+	lcd.writeString(8 * NB_PIX_X, 1, ":", MENU_NORMAL);
+
+	lcd.writeStringBig(4 * NB_PIX_X, 2, env.hygroX, MENU_NORMAL);
+	lcd.writeString(9 * NB_PIX_X, 4, "%", MENU_NORMAL);
+}
+
+
+void pressure(void)
+{
+	updateData();
+
+	lcd.writeString(0, 1, menuList[2], MENU_NORMAL);
+	lcd.writeString(8 * NB_PIX_X, 1, ":", MENU_NORMAL);
+
+	lcd.writeStringBig(NB_PIX_X, 2, env.pressX, MENU_NORMAL);
+	lcd.writeString(12 * NB_PIX_X, 4, "Pa", MENU_NORMAL);
+}
+
+
+void luminosity(void)
+{
+	updateData();
+
+	lcd.writeString(0, 1, menuList[3], MENU_NORMAL);
+	lcd.writeString(10 * NB_PIX_X, 1, ":", MENU_NORMAL);
+
+	lcd.writeStringBig(4 * NB_PIX_X, 2, env.lumX, MENU_NORMAL);
+	lcd.writeString(9 * NB_PIX_X, 4, "%", MENU_NORMAL);
 }
