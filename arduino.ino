@@ -11,8 +11,8 @@
 #define SDA A4
 #define SCL A5
 
-#define TAILLEBUFFER 		 	   38
-#define DELAYING_ACK	 	  30*1000
+#define TAILLEBUFFER 		   38
+#define DELAYING_ACK	      30*1000
 #define DELAYING_SENDING   30*60*1000
 #define DELAY_AFTER_START   1*60*1000
 
