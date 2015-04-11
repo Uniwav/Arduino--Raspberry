@@ -1,6 +1,7 @@
 #!/usr/bin/python
 # -*-coding:utf-8 -*
 
+
 import serial
 import syslog
 import time
@@ -33,3 +34,4 @@ while 1:
     buff = donnees
 
     time.sleep(10)
+    
