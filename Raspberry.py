@@ -6,24 +6,38 @@ import serial
 import time
 
 
-usb = '/dev/ttyUSB0'
-arduino = serial.Serial(usb, 9600, timeout = 5)
+USB = '/dev/ttyUSB0'
 
 
-donnees = ""
+pursue = True
+
+while pursue == True:
+
+    try:
+        arduino = serial.Serial(USB, 9600, timeout = 5)
+        pursue = False
+        pass
+
+    except OSError:
+        pursue = True
+
+    time.sleep(5)
+
+
+
+data = ""
 buff = ""
-
 
 while 1:
 
     arduino.flush()
-    donnees = arduino.readline()
+    data = arduino.readline()
     arduino.flush()
     arduino.write(str('K'))
 
-    #print donnees
+    #print data
 
-    if donnees != "99" and donnees != buff and buff != "":
+    if data != "99" and data != buff and buff != "":
 
         with open('data.txt', 'a') as fichier:
 
@@ -32,7 +46,6 @@ while 1:
 
         fichier.close()
 
-    buff = donnees
+    buff = data
 
     time.sleep(10)
-    
