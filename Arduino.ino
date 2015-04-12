@@ -11,10 +11,12 @@
 #define SDA A4
 #define SCL A5
 
-#define TAILLEBUFFER 		   38
-#define DELAYING_ACK	      30*1000
+#define TAILLEBUFFER	    	    38
+#define DELAYING_ACK	       30*1000
 #define DELAYING_SENDING   30*60*1000
 #define DELAY_AFTER_START   1*60*1000
+#define DELAY_RELOAD          30*1000
+#define DELAY_SLEEP_SCREEN  2*60*1000
 
 
 
@@ -63,17 +65,23 @@ void setup()
 
 void loop()
 {
-	static unsigned long int schedule = DELAY_AFTER_START;
-
+	static unsigned long int schedule = (unsigned long int)DELAY_AFTER_START;
+	static unsigned long int reload   = (unsigned long int)0;
+	
 
 	//Menu
+	if(millis() - reload >= DELAY_RELOAD)
+	{
+		printTime();
+	    reload = millis();
+	}
 	lcd.browseMenu(menuList, menuFunction);
 
 
 	//Envoie données
 	if(millis() - schedule >= DELAYING_SENDING || lcd.getLongPress() == true)
 	{
-		sendData();
+		//sendData();
 		schedule = millis();
 	}
 }
@@ -85,7 +93,7 @@ void updateData()
 	env.temp = (bmp.readTemperature() + dht.readTemperature(0)) / 2.0;
 	env.hygro = dht.readHumidity();
 	env.pressure = (bmp.readPressure() / 100.0);
-	env.luminosity = (5.0 * analogRead(LUM)) / 1023.0;
+	env.luminosity = (900.0 * analogRead(LUM)) / 1000.0;
 
 	dtostrf(env.temp, 4, 1, env.tempX);
 	dtostrf(env.hygro, 2, 0, env.hygroX);
@@ -133,7 +141,7 @@ void sendData()
 			Serial.flush();
 		}
 
-		tempsAttendu = millis();
+		timeWaited = millis();
 
 		lcd.clear();
 		lcd.writeString(CENTER("Waiting"), 1, "Waiting", MENU_NORMAL);
@@ -158,6 +166,24 @@ void sendData()
 		lcd.turnBacklightOn(false);
 		lcd.clear();
 	}
+}
+
+
+void printTime()
+{
+	char timeBuffer[NBCHAR_X];
+
+	DS1302_clock_burst_read((uint8_t *) &rtc);
+
+	sprintf(timeBuffer, "%02d/%02d/%02d %02d:%02d", \
+    	bcd2bin(rtc.Date10, rtc.Date), \
+    	bcd2bin(rtc.Month10, rtc.Month), \
+    	bcd2bin(rtc.Year10, rtc.Year), \
+    	bcd2bin(rtc.h24.Hour10, rtc.h24.Hour), \
+    	bcd2bin(rtc.Minutes10, rtc.Minutes));
+
+    lcd.showMenu(menuList);
+    lcd.writeString(0, 1, timeBuffer, MENU_NORMAL);
 }
 
 
