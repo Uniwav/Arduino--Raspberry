@@ -11,12 +11,13 @@
 #define SDA A4
 #define SCL A5
 
-#define TAILLEBUFFER	    	    38
+#define TAILLEBUFFER 		    38
 #define DELAYING_ACK	       30*1000
 #define DELAYING_SENDING   30*60*1000
 #define DELAY_AFTER_START   1*60*1000
 #define DELAY_RELOAD          30*1000
 #define DELAY_SLEEP_SCREEN  2*60*1000
+#define WAKEUP_SCREEN	    10*60*1000
 
 
 
@@ -66,15 +67,16 @@ void setup()
 void loop()
 {
 	static unsigned long int schedule = (unsigned long int)DELAY_AFTER_START;
+	static unsigned long int printDot = (unsigned long int)WAKEUP_SCREEN;
 	static unsigned long int reload   = (unsigned long int)0;
-	
 
 	//Menu
 	if(millis() - reload >= DELAY_RELOAD)
 	{
 		printTime();
-	    reload = millis();
+		reload = millis();
 	}
+
 	lcd.browseMenu(menuList, menuFunction);
 
 
@@ -83,6 +85,28 @@ void loop()
 	{
 		//sendData();
 		schedule = millis();
+	}
+
+	//WakeUp Screen
+	if(millis() - printDot >= WAKEUP_SCREEN)
+	{
+		lcd.clear();
+		for(short int i = 0, j; i <= 5; i++)
+		{
+			for(j = 0; j < NBCHAR_X; j++)
+			{
+				if(i == 2 && j == 14)
+				{
+					lcd.clear();
+				}
+				lcd.writeString(j * NB_PIX_X, i, ".", MENU_NORMAL);
+				lcd.writeString((NBCHAR_X - 1 - j) * NB_PIX_X, 5 - i, ".", MENU_HIGHLIGHT);
+				delay(50);
+			}
+		}
+
+		lcd.clear();
+		printDot = millis();
 	}
 }
 
