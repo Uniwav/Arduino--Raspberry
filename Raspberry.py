@@ -3,7 +3,6 @@
 
 
 import serial
-import syslog
 import time
 
 usb = '/dev/ttyUSB0'
