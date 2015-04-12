@@ -5,8 +5,10 @@
 import serial
 import time
 
+
 usb = '/dev/ttyUSB0'
 arduino = serial.Serial(usb, 9600, timeout = 5)
+
 
 donnees = ""
 buff = ""
@@ -19,7 +21,7 @@ while 1:
     arduino.flush()
     arduino.write(str('K'))
 
-    print donnees
+    #print donnees
 
     if donnees != "99" and donnees != buff and buff != "":
 
