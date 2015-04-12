@@ -11,7 +11,7 @@
 #define SDA A4
 #define SCL A5
 
-#define TAILLEBUFFER 		    38
+#define TAILLEBUFFER		    38
 #define DELAYING_ACK	       30*1000
 #define DELAYING_SENDING   30*60*1000
 #define DELAY_AFTER_START   1*60*1000
@@ -101,7 +101,7 @@ void loop()
 				}
 				lcd.writeString(j * NB_PIX_X, i, ".", MENU_NORMAL);
 				lcd.writeString((NBCHAR_X - 1 - j) * NB_PIX_X, 5 - i, ".", MENU_HIGHLIGHT);
-				delay(50);
+				delay(75);
 			}
 		}
 
@@ -128,6 +128,10 @@ void updateData()
 
 void sendData()
 {
+	char buffer[TAILLEBUFFER];
+	short int charLenght = 0;
+	unsigned long int timeWaited = 0;
+	
 	updateData();
 
 	lcd.turnBacklightOn(true);
@@ -135,61 +139,53 @@ void sendData()
 	lcd.writeString(CENTER("Sending"), 1, "Sending", MENU_NORMAL);
 	lcd.writeString(CENTER("data..."), 2, "data...", MENU_NORMAL);
 
-	char buffer[TAILLEBUFFER];
-	short int charLenght = 0;
+	DS1302_clock_burst_read((uint8_t *) &rtc);
 
-	unsigned long int timeWaited = 0;
+	sprintf(buffer, "%02d/%02d/%04d %02d:%02d:%02d %s %s %s %s", \
+    	bcd2bin(rtc.Date10, rtc.Date), \
+    	bcd2bin(rtc.Month10, rtc.Month), \
+    	2000 + bcd2bin(rtc.Year10, rtc.Year), \
+    	bcd2bin(rtc.h24.Hour10, rtc.h24.Hour), \
+    	bcd2bin(rtc.Minutes10, rtc.Minutes), \
+    	bcd2bin(rtc.Seconds10, rtc.Seconds), \
+    	env.tempX, \
+    	env.hygroX, \
+    	env.pressX, \
+    	env.lumX);
 
-	for( ; ; delay(10000))
+	charLenght = Serial.write(buffer);
+	Serial.flush();
+
+	if(charLenght != TAILLEBUFFER - 1)
 	{
-		DS1302_clock_burst_read((uint8_t *) &rtc);
-
-		sprintf(buffer, "%02d/%02d/%04d %02d:%02d:%02d %s %s %s %s", \
-	    	bcd2bin(rtc.Date10, rtc.Date), \
-	    	bcd2bin(rtc.Month10, rtc.Month), \
-	    	2000 + bcd2bin(rtc.Year10, rtc.Year), \
-	    	bcd2bin(rtc.h24.Hour10, rtc.h24.Hour), \
-	    	bcd2bin(rtc.Minutes10, rtc.Minutes), \
-	    	bcd2bin(rtc.Seconds10, rtc.Seconds), \
-	    	env.tempX, \
-	    	env.hygroX, \
-	    	env.pressX, \
-	    	env.lumX);
-
-		charLenght = Serial.write(buffer);
+		Serial.write("\n99");
 		Serial.flush();
-
-		if(charLenght != TAILLEBUFFER  - 1)
-		{
-			Serial.write("\n99");
-			Serial.flush();
-		}
-
-		timeWaited = millis();
-
-		lcd.clear();
-		lcd.writeString(CENTER("Waiting"), 1, "Waiting", MENU_NORMAL);
-		lcd.writeString(CENTER("for Pi..."), 2, "for Pi...", MENU_NORMAL);
-		delay(500);
-
-		while(Serial.read() != 'K')
-		{
-			if((millis() - timeWaited) <= DELAYING_ACK)
-			{
-				delay(100);
-			}
-			else
-			{
-				delay(10000);
-			}
-		}
-
-		lcd.clear();
-		lcd.writeString(CENTER("Data sent."), 1, "Data sent.", MENU_NORMAL);
-		delay(1500);
-		lcd.turnBacklightOn(false);
-		lcd.clear();
 	}
+
+	timeWaited = millis();
+
+	lcd.clear();
+	lcd.writeString(CENTER("Waiting"), 1, "Waiting", MENU_NORMAL);
+	lcd.writeString(CENTER("for Pi..."), 2, "for Pi...", MENU_NORMAL);
+	delay(500);
+
+	while(Serial.read() != 'K')
+	{
+		if((millis() - timeWaited) <= DELAYING_ACK)
+		{
+			delay(100);
+		}
+		else
+		{
+			delay(10000);
+		}
+	}
+
+	lcd.clear();
+	lcd.writeString(CENTER("Data sent."), 1, "Data sent.", MENU_NORMAL);
+	delay(1500);
+	lcd.clear();
+	lcd.turnBacklightOn(false);
 }
 
 
