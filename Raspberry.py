@@ -9,43 +9,49 @@ import time
 USB = '/dev/ttyUSB0'
 
 
-pursue = True
-
-while pursue == True:
-
-    try:
-        arduino = serial.Serial(USB, 9600, timeout = 5)
-        pursue = False
-        pass
-
-    except OSError:
-        pursue = True
-
-    time.sleep(5)
-
-
-
-data = ""
-buff = ""
-
 while 1:
 
-    arduino.flush()
-    data = arduino.readline()
-    arduino.flush()
-    arduino.write(str('K'))
+    boolean = True
 
-    #print data
+    while boolean == True:
+    
+        try:
+            arduino = serial.Serial(USB, 9600, timeout = 5)
+            boolean = False
+            pass
 
-    if data != "99" and data != buff and buff != "":
+        except OSError:
+            boolean = True
 
-        with open('data.txt', 'a') as fichier:
+        time.sleep(5)    
 
-            fichier.write("\n")
-            fichier.write(str(buff[0:len(buff)]))
 
-        fichier.close()
+    data = ""
+    buff = ""
 
-    buff = data
+    while boolean == False:
+    
+        try:
+            arduino.flush()
+            data = arduino.readline()
+            arduino.flush()
+            arduino.write(str('K'))
+            pass
 
-    time.sleep(10)
+        except IOError:
+            boolean = True
+
+        #print data
+
+        if data != "99" and data != buff and buff != "":
+
+            with open('data.txt', 'a') as fichier:
+
+                fichier.write("\n")
+                fichier.write(str(buff[0:len(buff)]))
+
+            fichier.close()
+
+        buff = data
+
+        time.sleep(10)
