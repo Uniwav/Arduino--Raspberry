@@ -11,13 +11,11 @@
 #define SDA A4
 #define SCL A5
 
-#define TAILLEBUFFER		    38
-#define DELAYING_ACK	       30*1000
-#define DELAYING_SENDING   30*60*1000
-#define DELAY_AFTER_START   1*60*1000
-#define DELAY_RELOAD          30*1000
-#define DELAY_SLEEP_SCREEN  2*60*1000
-#define WAKEUP_SCREEN	    10*60*1000
+#define TAILLEBUFFER 		  38
+#define DELAYING_ACK	     30*1000
+#define DELAYING_SENDING  5*60*1000
+#define DELAY_RELOAD        15*1000
+#define WARMUP_SCREEN	   2*60*1000
 
 
 
@@ -66,29 +64,33 @@ void setup()
 
 void loop()
 {
-	static unsigned long int schedule = (unsigned long int)DELAY_AFTER_START;
-	static unsigned long int printDot = (unsigned long int)WAKEUP_SCREEN;
-	static unsigned long int reload   = (unsigned long int)0;
+	static unsigned long int schedule = 0;
+	static unsigned long int printDot = 0;
+	static unsigned long int reload   = 0;
 
-	//Menu
+
+
+	//RePrint Time on Menu
 	if(millis() - reload >= DELAY_RELOAD)
 	{
 		printTime();
 		reload = millis();
 	}
 
+
 	lcd.browseMenu(menuList, menuFunction);
 
 
-	//Envoie données
-	if(millis() - schedule >= DELAYING_SENDING || lcd.getLongPress() == true)
+	//Send Data
+	if(millis() - schedule >= (long)DELAYING_SENDING || lcd.getLongPress() == true)
 	{
-		//sendData();
+		sendData();
 		schedule = millis();
 	}
 
-	//WakeUp Screen
-	if(millis() - printDot >= WAKEUP_SCREEN)
+
+	//WarmUp Screen
+	if(millis() - printDot >= WARMUP_SCREEN)
 	{
 		lcd.clear();
 		for(short int i = 0, j; i <= 5; i++)
@@ -117,7 +119,7 @@ void updateData()
 	env.temp = (bmp.readTemperature() + dht.readTemperature(0)) / 2.0;
 	env.hygro = dht.readHumidity();
 	env.pressure = (bmp.readPressure() / 100.0);
-	env.luminosity = (900.0 * analogRead(LUM)) / 1000.0;
+	env.luminosity = (5 * analogRead(LUM)) / 1023.0;
 
 	dtostrf(env.temp, 4, 1, env.tempX);
 	dtostrf(env.hygro, 2, 0, env.hygroX);
@@ -138,6 +140,7 @@ void sendData()
 	lcd.clear();
 	lcd.writeString(CENTER("Sending"), 1, "Sending", MENU_NORMAL);
 	lcd.writeString(CENTER("data..."), 2, "data...", MENU_NORMAL);
+	delay(1000);
 
 	DS1302_clock_burst_read((uint8_t *) &rtc);
 
@@ -175,8 +178,10 @@ void sendData()
 		{
 			delay(100);
 		}
+
 		else
 		{
+			lcd.turnBacklightOn(false);
 			delay(10000);
 		}
 	}
