@@ -11,8 +11,8 @@
 #define SDA A4
 #define SCL A5
 
-#define TAILLEBUFFER 		  38
-#define DELAYING_ACK	     30*1000
+#define TAILLEBUFFER             38
+#define DELAYING_ACK        30*1000
 #define DELAYING_SENDING  5*60*1000
 #define DELAY_RELOAD        15*1000
 #define WARMUP_SCREEN	   2*60*1000
@@ -67,14 +67,15 @@ void loop()
 	static unsigned long int schedule = 0;
 	static unsigned long int printDot = 0;
 	static unsigned long int reload   = 0;
-
+	static bool reload_bool = false;
 
 
 	//RePrint Time on Menu
-	if(millis() - reload >= DELAY_RELOAD)
+	if(millis() - reload >= DELAY_RELOAD || reload_bool)
 	{
 		printTime();
 		reload = millis();
+		reload_bool = false;
 	}
 
 
@@ -86,11 +87,12 @@ void loop()
 	{
 		sendData();
 		schedule = millis();
+		reload_bool = true;
 	}
 
 
 	//WarmUp Screen
-	if(millis() - printDot >= WARMUP_SCREEN)
+	if(millis() - printDot >= (long)WARMUP_SCREEN)
 	{
 		lcd.clear();
 		for(short int i = 0, j; i <= 5; i++)
@@ -109,6 +111,7 @@ void loop()
 
 		lcd.clear();
 		printDot = millis();
+		reload_bool = true;
 	}
 }
 
