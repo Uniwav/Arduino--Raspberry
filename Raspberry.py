@@ -23,19 +23,19 @@ while 1:
         except OSError:
             boolean = True
 
-        time.sleep(5)    
+        time.sleep(10)
 
 
     data = ""
     buff = ""
+    arduino.flushInput()
 
     while boolean == False:
     
         try:
-            arduino.flush()
             data = arduino.readline()
-            arduino.flush()
             arduino.write(str('K'))
+            arduino.flush()
             pass
 
         except IOError:
@@ -43,16 +43,16 @@ while 1:
 
         #print data
 
-        if data != "99" and data != buff and buff != "":
+        if data != buff and buff != "" and data != "99":
 
             with open('data.txt', 'a') as fichier:
 
                 fichier.write("\n")
                 fichier.write(str(buff[0:len(buff)]))
+                fichier.flush()
 
             fichier.close()
 
         buff = data
 
-        time.sleep(10)
-
+        time.sleep(5)
