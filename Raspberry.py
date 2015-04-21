@@ -48,6 +48,7 @@ while 1:
             with open('data.txt', 'a') as fichier:
 
                 fichier.write("\n")
+                fichier.flush()
                 fichier.write(str(buff[0:len(buff)]))
                 fichier.flush()
 
