@@ -1,7 +1,7 @@
 # [Uniwav](http://uniwav.eu/) - Technical part
 
 This is the *Horloge*'s Part with *Arduino* → *Raspberry* communication, and the data writing system.
-All the sending toward web server is managed by ``rsync `` and ``cron `` on *Raspberry*.  
+All the sending system to web server is managed by ``rsync `` and ``cron `` on *Raspberry*.  
 
 The components used in the system are running with these libraries:  
   
