@@ -11,11 +11,12 @@
 #define SDA A4
 #define SCL A5
 
-#define TAILLEBUFFER             38
-#define DELAYING_ACK        30*1000
-#define DELAYING_SENDING  5*60*1000
-#define DELAY_RELOAD        15*1000
-#define WARMUP_SCREEN	   2*60*1000
+
+#define BUFFERSIZE		 38
+#define DELAYING_ACK	    30*1000
+#define DELAYING_SENDING 5*60*1000
+#define DELAY_RELOAD	    15*1000
+#define WARMUP_SCREEN	  2*60*1000
 
 
 
@@ -40,6 +41,21 @@ FONCTION menuFunction[NUM_MENU_ITEM] = {temperature, humidity, pressure, luminos
 char *projectName = "Uniwav:";
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
+
+
+typedef struct
+{
+    float temp;
+    float hygro;
+    float pressure;
+    int luminosity;
+
+    char tempX[5];
+    char hygroX[3];
+    char pressX[7];
+    char lumX[2];
+
+} VARIABLES;
 
 
 VARIABLES env;
@@ -122,18 +138,18 @@ void updateData()
 	env.temp = (bmp.readTemperature() + dht.readTemperature(0)) / 2.0;
 	env.hygro = dht.readHumidity();
 	env.pressure = (bmp.readPressure() / 100.0);
-	env.luminosity = (5 * analogRead(LUM)) / 1023.0;
+	env.luminosity = scaleLumimosity();
 
 	dtostrf(env.temp, 4, 1, env.tempX);
 	dtostrf(env.hygro, 2, 0, env.hygroX);
 	dtostrf(env.pressure, 6, 1, env.pressX);
-	dtostrf(env.luminosity, 2, 0, env.lumX);
+	sprintf(env.lumX, "%d", env.luminosity);
 }
 
 
 void sendData()
 {
-	char buffer[TAILLEBUFFER];
+	char buffer[BUFFERSIZE];
 	short int charLenght = 0;
 	unsigned long int timeWaited = 0;
 	
@@ -162,7 +178,7 @@ void sendData()
 	charLenght = Serial.write(buffer);
 	Serial.flush();
 
-	if(charLenght != TAILLEBUFFER - 1)
+	if(charLenght != BUFFERSIZE - 1)
 	{
 		Serial.write("\n99");
 		Serial.flush();
@@ -258,6 +274,58 @@ void luminosity(void)
 	lcd.writeString(0, 1, menuList[3], MENU_NORMAL);
 	lcd.writeString(10 * NB_PIX_X, 1, ":", MENU_NORMAL);
 
-	lcd.writeStringBig(4 * NB_PIX_X, 2, env.lumX, MENU_NORMAL);
-	lcd.writeString(9 * NB_PIX_X, 4, "%", MENU_NORMAL);
+	lcd.writeStringBig(5 * NB_PIX_X, 2, env.lumX, MENU_NORMAL);
+}
+
+
+int scaleLumimosity(void)
+{
+	int _scale = (int)analogRead(LUM);
+
+	if(_scale >= 1024)
+		return 22;
+	else if(_scale >= 1000)
+		return 21;
+	else if(_scale >=  900)
+		return 20;
+	else if(_scale >=  750)
+		return 19;
+	else if(_scale >=  700)
+		return 18;
+	else if(_scale >=  650)
+		return 17;
+	else if(_scale >=  600)
+		return 16;
+	else if(_scale >=  500)
+		return 15;
+	else if(_scale >=  400)
+		return 14;
+	else if(_scale >=  200)
+		return 13;
+	else if(_scale >=  175)
+		return 12;
+	else if(_scale >=  100)
+		return 11;
+	else if(_scale >=   50)
+		return 10;
+	else if(_scale >=   25)
+		return  9;
+	else if(_scale >=   20)
+		return  8;
+	else if(_scale >=   15)
+		return  7;
+	else if(_scale >=   10)
+		return  6;
+	else if(_scale >=    9)
+		return  5;
+	else if(_scale >=    7)
+		return  4;
+	else if(_scale >=    5)
+		return  3;
+	else if(_scale >=    3)
+		return  2;
+	else if(_scale >=    1)
+		return  1;
+	else
+		return  0;
 }
