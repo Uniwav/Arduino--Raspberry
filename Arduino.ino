@@ -180,7 +180,7 @@ void sendData()
 
 	if(charLenght != BUFFERSIZE - 1)
 	{
-		Serial.write("\n99");
+		Serial.write("99");
 		Serial.flush();
 	}
 
