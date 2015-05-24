@@ -12,11 +12,11 @@
 #define SCL A5
 
 
-#define BUFFERSIZE		 38
-#define DELAYING_ACK	    30*1000
-#define DELAYING_SENDING 5*60*1000
-#define DELAY_RELOAD	    15*1000
-#define WARMUP_SCREEN	  2*60*1000
+#define BUFFERSIZE               38
+#define DELAYING_ACK        30*1000
+#define DELAYING_SENDING  5*60*1000
+#define DELAY_RELOAD        15*1000
+#define WARMUP_SCREEN     2*60*1000
 
 
 
@@ -133,7 +133,7 @@ void loop()
 
 
 
-void updateData()
+void updateData(void)
 {
 	env.temp = (bmp.readTemperature() + dht.readTemperature(0)) / 2.0;
 	env.hygro = dht.readHumidity();
@@ -147,7 +147,7 @@ void updateData()
 }
 
 
-void sendData()
+void sendData(void)
 {
 	char buffer[BUFFERSIZE];
 	short int charLenght = 0;
@@ -178,42 +178,52 @@ void sendData()
 	charLenght = Serial.write(buffer);
 	Serial.flush();
 
-	if(charLenght != BUFFERSIZE - 1)
+	if(charLenght != BUFFERSIZE - 1) //Buffer couldn't be written entirely
 	{
 		Serial.write("99");
 		Serial.flush();
+
+		lcd.clear();
+		lcd.writeString(CENTER("Data can't"), 1, "Data can't", MENU_NORMAL);
+		lcd.writeString(CENTER("be sent..."), 2, "be sent...", MENU_NORMAL);
+		delay(500);
+
+		lcd.turnBacklightOn(false);
 	}
 
-	timeWaited = millis();
-
-	lcd.clear();
-	lcd.writeString(CENTER("Waiting"), 1, "Waiting", MENU_NORMAL);
-	lcd.writeString(CENTER("for Pi..."), 2, "for Pi...", MENU_NORMAL);
-	delay(500);
-
-	while(Serial.read() != 'K')
+	else
 	{
-		if((millis() - timeWaited) <= DELAYING_ACK)
+		timeWaited = millis();
+
+		lcd.clear();
+		lcd.writeString(CENTER("Waiting"), 1, "Waiting", MENU_NORMAL);
+		lcd.writeString(CENTER("for Pi..."), 2, "for Pi...", MENU_NORMAL);
+		delay(500);
+
+		while(Serial.read() != 'K')
 		{
-			delay(100);
+			if((millis() - timeWaited) <= DELAYING_ACK)
+			{
+				delay(100);
+			}
+
+			else
+			{
+				lcd.turnBacklightOn(false);
+				delay(10000);
+			}
 		}
 
-		else
-		{
-			lcd.turnBacklightOn(false);
-			delay(10000);
-		}
+		lcd.clear();
+		lcd.writeString(CENTER("Data sent."), 1, "Data sent.", MENU_NORMAL);
+		delay(1500);
+		lcd.clear();
+		lcd.turnBacklightOn(false);
 	}
-
-	lcd.clear();
-	lcd.writeString(CENTER("Data sent."), 1, "Data sent.", MENU_NORMAL);
-	delay(1500);
-	lcd.clear();
-	lcd.turnBacklightOn(false);
 }
 
 
-void printTime()
+void printTime(void)
 {
 	char timeBuffer[NBCHAR_X];
 
