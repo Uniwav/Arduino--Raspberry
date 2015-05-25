@@ -29,7 +29,7 @@ DHT dht(DHT_P, DHT11);
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 #define NUM_MENU_ITEM  4
 
-char menuList[NUM_MENU_ITEM][NBCHAR_X] = {"Temperature", "Humidity", "Pressure", "Luminosity"};
+const char menuList[NUM_MENU_ITEM][NBCHAR_X] = {"Temperature", "Humidity", "Pressure", "Luminosity"};
 
 void temperature(void);
 void humidity(void);
@@ -38,7 +38,7 @@ void luminosity(void);
 
 FONCTION menuFunction[NUM_MENU_ITEM] = {temperature, humidity, pressure, luminosity};
 
-char *projectName = "Uniwav:";
+const char *projectName = "Uniwav:";
 /////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
