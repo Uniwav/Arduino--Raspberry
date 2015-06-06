@@ -143,7 +143,7 @@ void updateData(void)
 	dtostrf(env.temp, 4, 1, env.tempX);
 	dtostrf(env.hygro, 2, 0, env.hygroX);
 	dtostrf(env.pressure, 6, 1, env.pressX);
-	sprintf(env.lumX, "%d", env.luminosity);
+	sprintf(env.lumX, "%02d", env.luminosity);
 }
 
 
@@ -180,13 +180,13 @@ void sendData(void)
 
 	if(charLenght != BUFFERSIZE - 1) //Buffer couldn't be written entirely
 	{
-		Serial.write("99");
+		Serial.write("\n99");
 		Serial.flush();
 
 		lcd.clear();
 		lcd.writeString(CENTER("Data can't"), 1, "Data can't", MENU_NORMAL);
 		lcd.writeString(CENTER("be sent..."), 2, "be sent...", MENU_NORMAL);
-		delay(500);
+		delay(1000);
 
 		lcd.turnBacklightOn(false);
 	}
