@@ -143,7 +143,15 @@ void updateData(void)
 	dtostrf(env.temp, 4, 1, env.tempX);
 	dtostrf(env.hygro, 2, 0, env.hygroX);
 	dtostrf(env.pressure, 6, 1, env.pressX);
-	sprintf(env.lumX, "%02d", env.luminosity);
+
+	if(env.luminosity >= 10)
+	{
+		sprintf(env.lumX, "%02d", env.luminosity);
+	}
+	else
+	{
+		sprintf(env.lumX, " %d", env.luminosity);
+	}
 }
 
 
@@ -151,7 +159,6 @@ void sendData(void)
 {
 	char buffer[BUFFERSIZE];
 	short int charLenght = 0;
-	unsigned long int timeWaited = 0;
 	
 	updateData();
 
@@ -193,7 +200,7 @@ void sendData(void)
 
 	else
 	{
-		timeWaited = millis();
+		unsigned long int timeWaited = millis();
 
 		lcd.clear();
 		lcd.writeString(CENTER("Waiting"), 1, "Waiting", MENU_NORMAL);
