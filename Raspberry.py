@@ -43,7 +43,7 @@ while 1:
 
         #print data
 
-        if data != buff and buff != "" and data != "99":
+        if buff != data and buff != "" and buff != "99":
 
             with open('data.txt', 'a') as fichier:
 
